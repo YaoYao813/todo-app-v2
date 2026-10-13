@@ -107,6 +107,7 @@
             'use strict';
 
             // ========== 1. DOM元素初始化 ==========
+            const STORAGE_KEY = 'todos';
             const todoInput = document.getElementById('todoInput');
             const addBtn = document.getElementById('addBtn');
             const todoListEl = document.getElementById('todoList');
@@ -120,9 +121,26 @@
 
             // ========== 2. 数据层：单一数据源 ==========
             // todos 是唯一的任务状态来源，DOM 只是它的投影
-            let todos = [];
+            // 初始化时从 localStorage 恢复（没存过则为空数组）
+            let todos = load();
             // filter 是视图状态（all / done / active）——决定“现在怎么看”
             let filter = 'all';
+
+            // 持久化：把 todos 写入 / 读出 localStorage
+            function save() {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+            }
+            function load() {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw === null) return []; // 没存过 → 空数组
+                try {
+                    return JSON.parse(raw);
+                } catch (e) {
+                    // 数据被改坏时兜底，避免整个脚本初始化失败
+                    console.error('读取本地数据失败，已重置：', e);
+                    return [];
+                }
+            }
 
             // ========== 3. 渲染层：DOM 是 todos 的投影 ==========
             function render() {
@@ -173,27 +191,27 @@
                     return;
                 }
                 todos = [...todos, { id: Date.now(), text: content, completed: false }];
-                render();
+                save(); render();
                 todoInput.value = '';
                 todoInput.focus();
             }
 
             function removeTodo(id) {
                 todos = todos.filter(t => t.id !== id);
-                render();
+                save(); render();
             }
 
             function toggleTodo(id) {
                 todos = todos.map(t =>
                     t.id === id ? { ...t, completed: !t.completed } : t
                 );
-                render();
+                save(); render();
             }
 
             // 删除所有已完成任务
             function clearCompleted() {
                 todos = todos.filter(t => !t.completed);
-                render();
+                save(); render();
             }
 
             // ========== 5. 筛选：只改视图状态，不需要 save() ==========
