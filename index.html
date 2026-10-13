@@ -234,6 +234,10 @@
                 btn.addEventListener('click', () => setFilter(btn.dataset.filter));
             });
 
+            // 实验要求：允许在控制台调用 clearCompleted()
+            // （IIFE 内部函数默认外部不可见，这里只挂一个测试入口，不改数据流）
+            window.clearCompleted = clearCompleted;
+
             // 初始渲染 + 自动聚焦
             render();
             todoInput.focus();
