@@ -36,6 +36,23 @@
         #addBtn:hover {
             background: #4096ff;
         }
+        .filter-area {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .filter-btn {
+            padding: 4px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            background: #fff;
+            color: #555;
+            cursor: pointer;
+        }
+        .filter-btn.active {
+            border-color: #1677ff;
+            color: #1677ff;
+        }
         #todoList {
             list-style: none;
             padding: 0;
@@ -75,6 +92,11 @@
             <input type="text" id="todoInput" placeholder="输入待办事项">
             <button id="addBtn">添加</button>
         </div>
+        <div class="filter-area">
+            <button class="filter-btn active" data-filter="all">全部</button>
+            <button class="filter-btn" data-filter="active">未完成</button>
+            <button class="filter-btn" data-filter="done">已完成</button>
+        </div>
         <ul id="todoList"></ul>
     </div>
 
@@ -88,6 +110,7 @@
             const todoInput = document.getElementById('todoInput');
             const addBtn = document.getElementById('addBtn');
             const todoListEl = document.getElementById('todoList');
+            const filterBtns = document.querySelectorAll('.filter-btn');
 
             // 执行条件校验：关键元素缺失时终止初始化，避免后续报错
             if (!todoInput || !addBtn || !todoListEl) {
@@ -98,6 +121,8 @@
             // ========== 2. 数据层：单一数据源 ==========
             // todos 是唯一的任务状态来源，DOM 只是它的投影
             let todos = [];
+            // filter 是视图状态（all / done / active）——决定“现在怎么看”
+            let filter = 'all';
 
             // ========== 3. 渲染层：DOM 是 todos 的投影 ==========
             function render() {
@@ -106,7 +131,13 @@
                 // 文档碎片：批量插入节点，仅触发一次重排重绘
                 const fragment = document.createDocumentFragment();
 
-                todos.forEach(t => {
+                // 先过滤：决定“显示哪些”，不改 todos 本身
+                const shown = todos.filter(t =>
+                    filter === 'all' ? true :
+                    filter === 'done' ? t.completed : !t.completed
+                );
+
+                shown.forEach(t => {
                     const li = document.createElement('li');
                     // textContent 注入纯文本，杜绝 XSS
                     li.textContent = t.text;
@@ -165,11 +196,24 @@
                 render();
             }
 
-            // ========== 5. 事件层 ==========
+            // ========== 5. 筛选：只改视图状态，不需要 save() ==========
+            function setFilter(f) {
+                filter = f;
+                filterBtns.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.filter === f);
+                });
+                render();
+            }
+
+            // ========== 6. 事件层 ==========
             addBtn.addEventListener('click', () => addTodo(todoInput.value));
 
             todoInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') addTodo(todoInput.value);
+            });
+
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', () => setFilter(btn.dataset.filter));
             });
 
             // 初始渲染 + 自动聚焦
