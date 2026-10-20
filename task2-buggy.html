@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task2 缺陷复现：删除后未 return</title>
+    <style>
+        .todo-container {
+            width: 400px;
+            margin: 50px auto;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        .input-area {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        #todoInput {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            outline: none;
+        }
+        #todoInput:focus {
+            border-color: #1677ff;
+        }
+        #addBtn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background: #1677ff;
+            color: #fff;
+            cursor: pointer;
+        }
+        #addBtn:hover {
+            background: #4096ff;
+        }
+        .filter-area {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .filter-btn {
+            padding: 4px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            background: #fff;
+            color: #555;
+            cursor: pointer;
+        }
+        .filter-btn.active {
+            border-color: #1677ff;
+            color: #1677ff;
+        }
+        #todoList {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        #todoList li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+        }
+        #todoList li:last-child {
+            border-bottom: none;
+        }
+        #todoList li.done {
+            color: #bbb;
+            text-decoration: line-through;
+        }
+        .del-btn {
+            border: none;
+            background: transparent;
+            color: #bbb;
+            font-size: 16px;
+            line-height: 1;
+            cursor: pointer;
+        }
+        .del-btn:hover {
+            color: #ff4d4f;
+        }
+    </style>
+</head>
+<body>
+    <div class="todo-container">
+        <div class="input-area">
+            <input type="text" id="todoInput" placeholder="输入待办事项">
+            <button id="addBtn">添加</button>
+        </div>
+        <div class="filter-area">
+            <button class="filter-btn active" data-filter="all">全部</button>
+            <button class="filter-btn" data-filter="active">未完成</button>
+            <button class="filter-btn" data-filter="done">已完成</button>
+        </div>
+        <ul id="todoList"></ul>
+    </div>
+
+    <script>
+        // IIFE 立即执行函数：形成独立局部作用域，彻底解决全局变量污染
+        (function () {
+            // 开启严格模式：禁止隐式全局变量、规范语法，从源头规避低级错误
+            'use strict';
+
+            // ========== 1. DOM元素初始化 ==========
+            const STORAGE_KEY = 'todos';
+            const todoInput = document.getElementById('todoInput');
+            const addBtn = document.getElementById('addBtn');
+            const todoListEl = document.getElementById('todoList');
+            const filterBtns = document.querySelectorAll('.filter-btn');
+
+            // 执行条件校验：关键元素缺失时终止初始化，避免后续报错
+            if (!todoInput || !addBtn || !todoListEl) {
+                console.error('Todo列表初始化失败：页面缺少关键DOM元素');
+                return;
+            }
+
+            // ========== 2. 数据层：单一数据源 ==========
+            // todos 是唯一的任务状态来源，DOM 只是它的投影
+            // 初始化时从 localStorage 恢复（没存过则为空数组）
+            let todos = load();
+            // filter 是视图状态（all / done / active）——决定“现在怎么看”
+            let filter = 'all';
+
+            // 持久化：把 todos 写入 / 读出 localStorage
+            function save() {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+            }
+            function load() {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw === null) return []; // 没存过 → 空数组
+                try {
+                    return JSON.parse(raw);
+                } catch (e) {
+                    // 数据被改坏时兜底，避免整个脚本初始化失败
+                    console.error('读取本地数据失败，已重置：', e);
+                    return [];
+                }
+            }
+
+            // ========== 3. 渲染层：DOM 是 todos 的投影 ==========
+            function render() {
+                // 清空 → 整表重画
+                todoListEl.innerHTML = '';
+                // 文档碎片：批量插入节点，仅触发一次重排重绘
+                const fragment = document.createDocumentFragment();
+
+                // 先过滤：决定“显示哪些”，不改 todos 本身
+                const shown = todos.filter(t =>
+                    filter === 'all' ? true :
+                    filter === 'done' ? t.completed : !t.completed
+                );
+
+                shown.forEach(t => {
+                    const li = document.createElement('li');
+                    // textContent 注入纯文本，杜绝 XSS
+                    li.textContent = t.text;
+                    // li 记住自己的 id，事件委托时靠它定位是哪条数据
+                    li.dataset.id = t.id;
+                    if (t.completed) li.classList.add('done');
+
+                    // 删除按钮：不再绑定监听器，只用 data-action 标记操作类型
+                    const delBtn = document.createElement('button');
+                    delBtn.textContent = '×';
+                    delBtn.className = 'del-btn';
+                    delBtn.dataset.action = 'delete';
+                    li.appendChild(delBtn);
+
+                    fragment.appendChild(li);
+                });
+
+                todoListEl.appendChild(fragment);
+            }
+
+            // ========== 4. 业务层：三个操作都生成新数组 ==========
+            function addTodo(text) {
+                const content = text.trim();
+                // 输入边界拦截：空值、纯空格直接终止
+                if (content.length === 0) {
+                    todoInput.focus();
+                    return;
+                }
+                todos = [...todos, { id: Date.now(), text: content, completed: false }];
+                save(); render();
+                todoInput.value = '';
+                todoInput.focus();
+            }
+
+            function removeTodo(id) {
+                console.log('[removeTodo] 被调用，id =', id);
+                todos = todos.filter(t => t.id !== id);
+                save(); render();
+            }
+
+            function toggleTodo(id) {
+                console.log('[toggleTodo] 被调用，id =', id);
+                todos = todos.map(t =>
+                    t.id === id ? { ...t, completed: !t.completed } : t
+                );
+                save(); render();
+            }
+
+            // 删除所有已完成任务
+            function clearCompleted() {
+                todos = todos.filter(t => !t.completed);
+                save(); render();
+            }
+
+            // ========== 5. 筛选：只改视图状态，不需要 save() ==========
+            function setFilter(f) {
+                filter = f;
+                filterBtns.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.filter === f);
+                });
+                render();
+            }
+
+            // ========== 6. 事件层 ==========
+            addBtn.addEventListener('click', () => addTodo(todoInput.value));
+
+            todoInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') addTodo(todoInput.value);
+            });
+
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', () => setFilter(btn.dataset.filter));
+            });
+
+            // 列表交互：统一交给父容器 todoListEl（事件委托），不再逐项绑定
+            todoListEl.addEventListener('click', (e) => {
+                // ① target 可能不是元素，先挡掉
+                if (!(e.target instanceof Element)) return;
+                // ② 向上找最近的 li；点列表空白处会得到 null
+                const item = e.target.closest('li');
+                if (!item || !todoListEl.contains(item)) return;
+                // ③ dataset.id 是字符串，转成数字与 todos 里的 id 对齐
+                const id = Number(item.dataset.id);
+                if (!id) return;
+                // ④ 操作分流：删除按钮 → 删除；其余 → 切换
+                const delBtn = e.target.closest('[data-action="delete"]');
+                if (delBtn && item.contains(delBtn)) {
+                    removeTodo(id);
+                }
+                toggleTodo(id);
+            });
+
+            // 实验要求：允许在控制台调用 clearCompleted()
+            // （IIFE 内部函数默认外部不可见，这里只挂一个测试入口，不改数据流）
+            window.clearCompleted = clearCompleted;
+
+            // 初始渲染 + 自动聚焦
+            render();
+            todoInput.focus();
+        })();
+    </script>
+</body>
+</html>
