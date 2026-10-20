@@ -242,6 +242,7 @@
                 const delBtn = e.target.closest('[data-action="delete"]');
                 if (delBtn && item.contains(delBtn)) {
                     removeTodo(id);
+                    return; // 删除后直接返回，避免同一次点击继续执行切换
                 }
                 toggleTodo(id);
             });
