@@ -159,21 +159,15 @@
                     const li = document.createElement('li');
                     // textContent 注入纯文本，杜绝 XSS
                     li.textContent = t.text;
-                    // li 记住自己的 id，后续靠它定位
+                    // li 记住自己的 id，事件委托时靠它定位是哪条数据
                     li.dataset.id = t.id;
                     if (t.completed) li.classList.add('done');
 
-                    // 点击 li 切换完成状态
-                    li.addEventListener('click', () => toggleTodo(t.id));
-
-                    // 删除按钮
+                    // 删除按钮：不再绑定监听器，只用 data-action 标记操作类型
                     const delBtn = document.createElement('button');
                     delBtn.textContent = '×';
                     delBtn.className = 'del-btn';
-                    delBtn.addEventListener('click', (e) => {
-                        e.stopPropagation(); // 防止顺带触发 li 的点击
-                        removeTodo(t.id);
-                    });
+                    delBtn.dataset.action = 'delete';
                     li.appendChild(delBtn);
 
                     fragment.appendChild(li);
@@ -232,6 +226,24 @@
 
             filterBtns.forEach(btn => {
                 btn.addEventListener('click', () => setFilter(btn.dataset.filter));
+            });
+
+            // 列表交互：统一交给父容器 todoListEl（事件委托），不再逐项绑定
+            todoListEl.addEventListener('click', (e) => {
+                // ① target 可能不是元素，先挡掉
+                if (!(e.target instanceof Element)) return;
+                // ② 向上找最近的 li；点列表空白处会得到 null
+                const item = e.target.closest('li');
+                if (!item || !todoListEl.contains(item)) return;
+                // ③ dataset.id 是字符串，转成数字与 todos 里的 id 对齐
+                const id = Number(item.dataset.id);
+                if (!id) return;
+                // ④ 操作分流：删除按钮 → 删除；其余 → 切换
+                const delBtn = e.target.closest('[data-action="delete"]');
+                if (delBtn && item.contains(delBtn)) {
+                    removeTodo(id);
+                }
+                toggleTodo(id);
             });
 
             // 实验要求：允许在控制台调用 clearCompleted()
