@@ -16,6 +16,17 @@ function isFilter(value: string | undefined): value is Filter {
   return value === 'all' || value === 'active' || value === 'done';
 }
 
+function findTodoId(item: Element): number | null {
+  if (!(item instanceof HTMLElement)) return null;
+  const id = Number(item.dataset.id);
+  return Number.isSafeInteger(id) ? id : null;
+}
+
+function getAction(actionEl: Element | null, item: Element): string | null {
+  if (!(actionEl instanceof HTMLElement) || !item.contains(actionEl)) return null;
+  return actionEl.dataset.action ?? null;
+}
+
 function bootstrap(): void {
   const todoInput = document.getElementById('todoInput');
   const addBtn = document.getElementById('addBtn');
@@ -31,7 +42,7 @@ function bootstrap(): void {
     return;
   }
 
-  let todos: Todo[] = loadTodos(localStorage.getItem(STORAGE_KEY));
+  const todos: Todo[] = loadTodos(localStorage.getItem(STORAGE_KEY));
   let filter: Filter = 'all';
 
   const save = (): void => {
@@ -41,7 +52,7 @@ function bootstrap(): void {
   const render = (): void => {
     todoListEl.replaceChildren();
     const fragment = document.createDocumentFragment();
-    const shown = todos.filter(todo => {
+    const shown = todos.filter((todo) => {
       if (filter === 'done') return todo.completed;
       if (filter === 'active') return !todo.completed;
       return true;
@@ -98,7 +109,7 @@ function bootstrap(): void {
   };
 
   const handleEdit = (id: number): void => {
-    const target = todos.find(todo => todo.id === id);
+    const target = todos.find((todo) => todo.id === id);
     if (!target) return;
     const next = prompt('修改任务内容：', target.text);
     if (next === null) return;
@@ -115,7 +126,7 @@ function bootstrap(): void {
 
   addBtn.addEventListener('click', handleAdd);
 
-  todoInput.addEventListener('keydown', event => {
+  todoInput.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') handleAdd();
   });
 
@@ -126,28 +137,23 @@ function bootstrap(): void {
     });
   }
 
-  todoListEl.addEventListener('click', event => {
+  todoListEl.addEventListener('click', (event) => {
     if (!(event.target instanceof Element)) return;
     const item = event.target.closest('li');
     if (!item || !todoListEl.contains(item)) return;
-    if (!(item instanceof HTMLElement)) return;
 
-    const rawId = item.dataset.id;
-    const id = Number(rawId);
-    if (!Number.isSafeInteger(id)) return;
+    const id = findTodoId(item);
+    if (id === null) return;
 
-    const actionEl = event.target.closest('[data-action]');
-    if (actionEl instanceof HTMLElement && item.contains(actionEl)) {
-      const action = actionEl.dataset.action;
-      if (action === 'delete') {
-        removeTodo(todos, id);
-        commit();
-        return;
-      }
-      if (action === 'edit') {
-        handleEdit(id);
-        return;
-      }
+    const action = getAction(event.target.closest('[data-action]'), item);
+    if (action === 'delete') {
+      removeTodo(todos, id);
+      commit();
+      return;
+    }
+    if (action === 'edit') {
+      handleEdit(id);
+      return;
     }
     toggleTodo(todos, id);
     commit();

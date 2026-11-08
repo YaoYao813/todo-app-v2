@@ -17,23 +17,19 @@ export function addTodo(todos: Todo[], text: string | null | undefined): void {
 }
 
 export function toggleTodo(todos: Todo[], id: number): void {
-  const target = todos.find(todo => todo.id === id);
+  const target = todos.find((todo) => todo.id === id);
   if (!target) return;
   target.completed = !target.completed;
 }
 
 export function removeTodo(todos: Todo[], id: number): void {
-  const index = todos.findIndex(todo => todo.id === id);
+  const index = todos.findIndex((todo) => todo.id === id);
   if (index === -1) return;
   todos.splice(index, 1);
 }
 
-export function editTodo(
-  todos: Todo[],
-  id: number,
-  text: string | null | undefined,
-): boolean {
-  const target = todos.find(todo => todo.id === id);
+export function editTodo(todos: Todo[], id: number, text: string | null | undefined): boolean {
+  const target = todos.find((todo) => todo.id === id);
   if (!target) return false;
   const content = normalizeText(text);
   if (content.length === 0 || content.length > MAX_TEXT_LENGTH) return false;
@@ -72,16 +68,23 @@ function createId(todos: readonly Todo[]): number {
   return maxId + 1;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function hasTodoFields(value: Record<string, unknown>): boolean {
+  return 'id' in value && 'text' in value && 'completed' in value;
+}
+
+function isValidId(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value);
+}
+
+function isValidText(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
 function isTodo(value: unknown): value is Todo {
-  if (typeof value !== 'object' || value === null) return false;
-  if (!('id' in value) || !('text' in value) || !('completed' in value)) {
-    return false;
-  }
-  return (
-    typeof value.id === 'number' &&
-    Number.isSafeInteger(value.id) &&
-    typeof value.text === 'string' &&
-    value.text.trim().length > 0 &&
-    typeof value.completed === 'boolean'
-  );
+  if (!isRecord(value) || !hasTodoFields(value)) return false;
+  return isValidId(value.id) && isValidText(value.text) && typeof value.completed === 'boolean';
 }
