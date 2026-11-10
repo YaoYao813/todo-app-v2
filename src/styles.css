@@ -1,0 +1,155 @@
+.todo-container {
+  width: 400px;
+  margin: 50px auto;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+.todo-container h1 {
+  margin: 0 0 20px;
+  font-size: 22px;
+  color: #17365d;
+  text-align: center;
+}
+
+.input-area {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+#todoInput {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  outline: none;
+}
+
+#todoInput:focus {
+  border-color: #1677ff;
+}
+
+#addBtn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background: #1677ff;
+  color: #fff;
+  cursor: pointer;
+}
+
+#addBtn:hover {
+  background: #4096ff;
+}
+
+.input-hint {
+  margin: 0 0 16px;
+  color: #999;
+  font-size: 12px;
+}
+
+.filter-area {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.filter-btn {
+  padding: 4px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  background: #fff;
+  color: #555;
+  cursor: pointer;
+}
+
+.filter-btn.active {
+  border-color: #1677ff;
+  color: #1677ff;
+}
+
+.todo-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.todo-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+}
+
+.todo-list li:last-child {
+  border-bottom: none;
+}
+
+.todo-list li.done .task-text {
+  color: #bbb;
+  text-decoration: line-through;
+}
+
+.task-text {
+  flex: 1;
+  word-break: break-word;
+}
+
+.task-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: 8px;
+}
+
+.del-btn,
+.edit-btn {
+  border: none;
+  background: transparent;
+  color: #bbb;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.del-btn {
+  font-size: 16px;
+}
+
+.edit-btn {
+  font-size: 13px;
+}
+
+.del-btn:hover {
+  color: #ff4d4f;
+}
+
+.edit-btn:hover {
+  color: #1677ff;
+}
+
+.footer-area {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  color: #999;
+  font-size: 12px;
+}
+
+.clear-btn {
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  background: #fff;
+  color: #666;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.clear-btn:disabled {
+  color: #ccc;
+  cursor: not-allowed;
+}
