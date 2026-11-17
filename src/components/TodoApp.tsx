@@ -11,6 +11,8 @@ import {
   toggleTodo,
 } from '../todo';
 import type { Filter, Todo } from '../todo';
+import { useTheme } from '../context/ThemeContext';
+import { ThemeToggle } from './ThemeToggle';
 import { TodoForm } from './TodoForm';
 import { TodoList } from './TodoList';
 
@@ -27,6 +29,7 @@ function readInitialTodos(): Todo[] {
 }
 
 export function TodoApp() {
+  const { theme } = useTheme();
   const [todos, setTodos] = useState<Todo[]>(readInitialTodos);
   const [filter, setFilter] = useState<Filter>('all');
 
@@ -62,7 +65,11 @@ export function TodoApp() {
 
   return (
     <main className="todo-container">
-      <h1>Todo 列表 V4.0</h1>
+      <header className="app-header">
+        <h1>Todo 列表 V4.0</h1>
+        <ThemeToggle />
+      </header>
+      <p className="theme-label">当前主题：{theme === 'dark' ? '深色模式' : '浅色模式'}</p>
       <TodoForm onAdd={handleAdd} />
       <p className="input-hint">内容会自动去除首尾空格，最多 200 字。</p>
 

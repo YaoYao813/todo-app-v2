@@ -9,6 +9,12 @@ test('loadTodos 坏 JSON：返回空数组，不崩溃', () => {
   expect(loadTodos('{not-json')).toEqual([]);
 });
 
+test('loadTodos 非数组：返回空数组', () => {
+  expect(loadTodos('{"id":1}')).toEqual([]);
+  expect(loadTodos('"任务"')).toEqual([]);
+  expect(loadTodos('123')).toEqual([]);
+});
+
 test('loadTodos 脏数据：只保留合法任务', () => {
   const raw = JSON.stringify([
     { id: 1, text: '学习TS', completed: false },

@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Todo列表 V4.0 React 版</title>
     <link rel="icon" href="data:," />
+    <script>
+      // 在 React 挂载前先恢复主题，避免首帧先浅后深的闪烁
+      try {
+        document.documentElement.dataset.theme =
+          localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
+      } catch (error) {
+        document.documentElement.dataset.theme = 'light';
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
